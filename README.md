@@ -2,7 +2,7 @@
 
 Intro
 =============
-Sample project for studying .net features, architectural design decisions and .
+Sample project for studying .net features, architectural design decisions and practicing concepts.
 
 Features:
 - [x] Containerized
