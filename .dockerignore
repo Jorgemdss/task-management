@@ -1,0 +1,30 @@
+
+# Binaries
+**/bin/
+**/obj/
+**/out/
+
+# Logs
+**/logs/
+*.log
+
+# IDE
+.vs/
+.vscode/
+*.user
+*.suo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Docker
+**/Dockerfile
+**/docker-compose*
+
+# Git
+.git/
+.gitignore
+
+# Test results
+**/TestResults/
