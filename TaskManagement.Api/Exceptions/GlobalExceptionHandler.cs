@@ -1,5 +1,6 @@
 using System.Net;
 using Microsoft.AspNetCore.Diagnostics;
+using Microsoft.AspNetCore.Mvc;
 using TaskManagement.Domain.Exceptions;
 
 namespace TaskManagement.Api.Exceptions;
@@ -7,10 +8,14 @@ namespace TaskManagement.Api.Exceptions;
 public class GlobalExceptionHandler : IExceptionHandler
 {
     private readonly ILogger _logger;
+    private readonly IProblemDetailsService _problemDetailService;
 
-    public GlobalExceptionHandler(ILogger<GlobalExceptionHandler> logger)
+    public GlobalExceptionHandler(
+        IProblemDetailsService problemDetailsService,
+        ILogger<GlobalExceptionHandler> logger)
     {
         _logger = logger;
+        _problemDetailService = problemDetailsService;
     }
 
     public async ValueTask<bool> TryHandleAsync(HttpContext httpContext, Exception exception, CancellationToken cancellationToken)
@@ -20,19 +25,21 @@ public class GlobalExceptionHandler : IExceptionHandler
         var (statusCode, message) = exception switch
         {
             BaseDomainException ex => (ex.StatusCode, ex.Message),
-            _ => (HttpStatusCode.InternalServerError, "An unexpected error occurred.")
+            _ => (HttpStatusCode.InternalServerError, exception.Message)
         };
 
         httpContext.Response.StatusCode = (int)statusCode;
 
-        await httpContext.Response.WriteAsJsonAsync(new
+        return await _problemDetailService.TryWriteAsync(new ProblemDetailsContext()
         {
-            status = (int)statusCode,
-            message = message,
-            timestamp = DateTime.UtcNow
-        }, cancellationToken);
-
-
-        return true;
+            HttpContext = httpContext,
+            Exception = exception,
+            ProblemDetails = new ProblemDetails
+            {
+                Type = exception.GetType().Name,
+                Title = "An error occured",
+                Detail = message
+            }
+        });
     }
 }
