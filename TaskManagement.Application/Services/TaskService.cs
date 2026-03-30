@@ -127,13 +127,6 @@ public class TaskService : ITaskService
             throw new TaskNotFoundException(taskId);
         }
 
-        if (task.UserId != userId)
-        {
-            // TODO JS: remove this, only here for tests to pass
-            throw new UnauthorizedTaskAccessException(taskId);
-
-        }
-
         return task;
     }
 }

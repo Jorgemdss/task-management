@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using TaskManagement.Api.Extensions;
+using TaskManagement.Application.Attributes;
 using TaskManagement.Application.Common.Interfaces;
 using TaskManagement.Application.DTOs;
 using TaskManagement.Domain.Exceptions;
@@ -39,18 +40,11 @@ public class TaskController : ControllerBase
     }
 
     [HttpGet("{id}")]
+    [AuthorizeResourceOwner<ITaskService>(resourceName: "task")]
     public async Task<IActionResult> GetTask(Guid id)
     {
         var userId = User.GetUserId();
         _logger.LogInformation("User {userId} getting task {id}", userId, id);
-
-        var taskOwner = await _taskService.GetOwnerIdAsync(id);
-        var auth = await _authorizationService.AuthorizeAsync(User, taskOwner, new UserOwnedResourcePermission());
-
-        if (!auth.Succeeded)
-        {
-            throw new UnauthorizedTaskAccessException(id);
-        }
 
         var task = await _taskService.GetTaskByIdAsync(id, userId);
 
