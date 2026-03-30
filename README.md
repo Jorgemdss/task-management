@@ -12,7 +12,7 @@ Features:
 - [x] Unit tests
 - [x] No Repositories
 - [x] Role based authorization (through AuthorizationHandler)
-- [ ] Permission custom attribute (ensure that only owner or admin can perform operations on owned resources)
+- [x] Generic permission custom attribute (ensure that only owner or admin can perform operations on owned resources)
 ---
 
 Running the docker container
