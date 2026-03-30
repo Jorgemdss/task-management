@@ -44,7 +44,7 @@ public class TaskController : ControllerBase
         var userId = User.GetUserId();
         _logger.LogInformation("User {userId} getting task {id}", userId, id);
 
-        var taskOwner = await _taskService.GetTaskOwnerIdAsync(id);
+        var taskOwner = await _taskService.GetOwnerIdAsync(id);
         var auth = await _authorizationService.AuthorizeAsync(User, taskOwner, new UserOwnedResourcePermission());
 
         if (!auth.Succeeded)

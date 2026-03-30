@@ -2,10 +2,8 @@ using TaskManagement.Application.DTOs;
 
 namespace TaskManagement.Application.Common.Interfaces;
 
-public interface ITaskService
+public interface ITaskService : IResourceOwnerService
 {
-    Task<Guid> GetTaskOwnerIdAsync(Guid taskId);
-
     Task<TaskDto> CreateTaskAsync(CreateTaskDto dto, Guid userId);
     Task<TaskDto> GetTaskByIdAsync(Guid taskId, Guid userId);
     Task<IEnumerable<TaskDto>> GetUserTasksAsync(Guid userId);

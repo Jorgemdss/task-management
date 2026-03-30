@@ -115,7 +115,7 @@ public class TaskControllerTest
         );
 
         _taskServiceMock
-            .Setup(s => s.GetTaskOwnerIdAsync(taskId))
+            .Setup(s => s.GetOwnerIdAsync(taskId))
             .ReturnsAsync(_testUserId);
 
         _authServiceMock
@@ -133,7 +133,7 @@ public class TaskControllerTest
         result.Value.Should().BeEquivalentTo(expectedTaskDto);
 
         _taskServiceMock.Verify(s =>
-            s.GetTaskOwnerIdAsync(taskId),
+            s.GetOwnerIdAsync(taskId),
             Times.Once);
 
         _taskServiceMock.Verify(s =>
@@ -147,7 +147,7 @@ public class TaskControllerTest
         var taskId = Guid.NewGuid();
 
         _taskServiceMock
-          .Setup(s => s.GetTaskOwnerIdAsync(taskId))
+          .Setup(s => s.GetOwnerIdAsync(taskId))
           .ThrowsAsync(new TaskNotFoundException(taskId));
 
         _authServiceMock
@@ -162,7 +162,7 @@ public class TaskControllerTest
             async () => await _controller.GetTask(taskId));
 
         _taskServiceMock.Verify(s =>
-            s.GetTaskOwnerIdAsync(taskId),
+            s.GetOwnerIdAsync(taskId),
             Times.Once);
 
         _authServiceMock.Verify(s =>
@@ -181,7 +181,7 @@ public class TaskControllerTest
         var realOwnerId = Guid.NewGuid();
 
         _taskServiceMock
-            .Setup(s => s.GetTaskOwnerIdAsync(taskId))
+            .Setup(s => s.GetOwnerIdAsync(taskId))
             .ReturnsAsync(realOwnerId);
 
         _authServiceMock
@@ -196,7 +196,7 @@ public class TaskControllerTest
             async () => await _controller.GetTask(taskId));
 
         _taskServiceMock.Verify(s =>
-            s.GetTaskOwnerIdAsync(It.IsAny<Guid>()),
+            s.GetOwnerIdAsync(It.IsAny<Guid>()),
             Times.Once);
 
         _authServiceMock.Verify(s =>

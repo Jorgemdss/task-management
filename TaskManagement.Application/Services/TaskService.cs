@@ -46,24 +46,23 @@ public class TaskService : ITaskService
 
     }
 
+    public async Task<Guid> GetOwnerIdAsync(Guid resourceId)
+    {
+        var task = await _dbContext.Tasks
+           .Where(t => t.Id == resourceId)
+           .Select(t => t.Id)
+           .SingleOrDefaultAsync();
+
+        if (task == default)
+            throw new TaskNotFoundException(resourceId);
+
+        return task;
+    }
+
     public async Task<TaskDto> GetTaskByIdAsync(Guid taskId, Guid userId)
     {
         var task = await GetTaskEntityAsync(taskId, userId);
         return task.MapToDto();
-    }
-
-    public async Task<Guid> GetTaskOwnerIdAsync(Guid taskId)
-    {
-
-        var task = await _dbContext.Tasks
-            .Where(t => t.Id == taskId)
-            .Select(t => t.Id)
-            .SingleOrDefaultAsync();
-
-        if (task == default)
-            throw new TaskNotFoundException(taskId);
-
-        return task;
     }
 
     public async Task<IEnumerable<TaskDto>> GetUserTasksAsync(Guid userId)
