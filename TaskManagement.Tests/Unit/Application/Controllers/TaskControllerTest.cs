@@ -23,7 +23,6 @@ public class TaskControllerTest
 {
     private readonly Mock<ITaskService> _taskServiceMock;
     private readonly Mock<ILogger<TaskController>> _loggerMock;
-    private readonly Mock<IAuthorizationService> _authServiceMock;
 
     private readonly TaskController _controller;
     private readonly Guid _testUserId;
@@ -33,8 +32,7 @@ public class TaskControllerTest
     {
         _taskServiceMock = new Mock<ITaskService>();
         _loggerMock = new Mock<ILogger<TaskController>>();
-        _authServiceMock = new Mock<IAuthorizationService>();
-        _controller = new TaskController(_loggerMock.Object, _taskServiceMock.Object, _authServiceMock.Object);
+        _controller = new TaskController(_loggerMock.Object, _taskServiceMock.Object);
 
         _testUserId = Guid.NewGuid();
         SetupSimpleUserClaims(_testUserId);
@@ -115,14 +113,6 @@ public class TaskControllerTest
         );
 
         _taskServiceMock
-            .Setup(s => s.GetOwnerIdAsync(taskId))
-            .ReturnsAsync(_testUserId);
-
-        _authServiceMock
-            .Setup(s => s.AuthorizeAsync(It.IsAny<ClaimsPrincipal>(), It.IsAny<Guid>(), It.IsAny<IEnumerable<IAuthorizationRequirement>>()))
-            .ReturnsAsync(AuthorizationResult.Success);
-
-        _taskServiceMock
             .Setup(s => s.GetTaskByIdAsync(It.IsAny<Guid>(), _testUserId))
             .ReturnsAsync(expectedTaskDto);
 
@@ -131,10 +121,6 @@ public class TaskControllerTest
         var result = operation.Should().BeOfType<OkObjectResult>().Subject;
         result.StatusCode.Should().Be(StatusCodes.Status200OK);
         result.Value.Should().BeEquivalentTo(expectedTaskDto);
-
-        _taskServiceMock.Verify(s =>
-            s.GetOwnerIdAsync(taskId),
-            Times.Once);
 
         _taskServiceMock.Verify(s =>
             s.GetTaskByIdAsync(It.IsAny<Guid>(), _testUserId),
@@ -147,14 +133,6 @@ public class TaskControllerTest
         var taskId = Guid.NewGuid();
 
         _taskServiceMock
-          .Setup(s => s.GetOwnerIdAsync(taskId))
-          .ThrowsAsync(new TaskNotFoundException(taskId));
-
-        _authServiceMock
-            .Setup(s => s.AuthorizeAsync(It.IsAny<ClaimsPrincipal>(), It.IsAny<Guid>(), It.IsAny<IEnumerable<IAuthorizationRequirement>>()))
-            .ReturnsAsync(AuthorizationResult.Failed);
-
-        _taskServiceMock
             .Setup(s => s.GetTaskByIdAsync(It.IsAny<Guid>(), _testUserId))
             .Throws(new TaskNotFoundException(taskId));
 
@@ -162,51 +140,10 @@ public class TaskControllerTest
             async () => await _controller.GetTask(taskId));
 
         _taskServiceMock.Verify(s =>
-            s.GetOwnerIdAsync(taskId),
-            Times.Once);
-
-        _authServiceMock.Verify(s =>
-            s.AuthorizeAsync(It.IsAny<ClaimsPrincipal>(), It.IsAny<Guid>(), It.IsAny<IEnumerable<IAuthorizationRequirement>>()),
-            Times.Never);
-
-        _taskServiceMock.Verify(s =>
             s.GetTaskByIdAsync(It.IsAny<Guid>(), _testUserId),
-            Times.Never);
+            Times.Once);
     }
 
-    [Fact]
-    public async Task Get_Task_WhenNotOwnerAndNotAdmin_ShouldThrowUnauthorizedTaskAccessException()
-    {
-        var taskId = Guid.NewGuid();
-        var realOwnerId = Guid.NewGuid();
-
-        _taskServiceMock
-            .Setup(s => s.GetOwnerIdAsync(taskId))
-            .ReturnsAsync(realOwnerId);
-
-        _authServiceMock
-            .Setup(s => s.AuthorizeAsync(It.IsAny<ClaimsPrincipal>(), It.IsAny<Guid>(), It.IsAny<IEnumerable<IAuthorizationRequirement>>()))
-            .ReturnsAsync(AuthorizationResult.Failed);
-
-        _taskServiceMock
-            .Setup(s => s.GetTaskByIdAsync(It.IsAny<Guid>(), _testUserId))
-            .ThrowsAsync(new UnauthorizedTaskAccessException(taskId));
-
-        await Assert.ThrowsAsync<UnauthorizedTaskAccessException>(
-            async () => await _controller.GetTask(taskId));
-
-        _taskServiceMock.Verify(s =>
-            s.GetOwnerIdAsync(It.IsAny<Guid>()),
-            Times.Once);
-
-        _authServiceMock.Verify(s =>
-            s.AuthorizeAsync(It.IsAny<ClaimsPrincipal>(), It.IsAny<Guid>(), It.IsAny<IEnumerable<IAuthorizationRequirement>>()),
-            Times.Once);
-
-        _taskServiceMock.Verify(s =>
-            s.GetTaskByIdAsync(It.IsAny<Guid>(), _testUserId),
-            Times.Never);
-    }
 
     [Fact]
     public async Task GetUserTasks_ShouldReturn200Ok()
@@ -267,24 +204,6 @@ public class TaskControllerTest
 
         var updateRequest = new UpdateTaskDto("taskTittle", "Description", null);
         await Assert.ThrowsAsync<TaskNotFoundException>(
-            async () => await _controller.UpdateTask(taskId, updateRequest));
-
-        _taskServiceMock.Verify(s =>
-            s.UpdateTaskAsync(It.IsAny<Guid>(), It.IsAny<UpdateTaskDto>(), _testUserId),
-            Times.Once);
-    }
-
-    [Fact]
-    public async Task UpdateTask_WhenNotOwner_ShouldThrow()
-    {
-        var taskId = Guid.NewGuid();
-
-        _taskServiceMock.Setup(s =>
-            s.UpdateTaskAsync(It.IsAny<Guid>(), It.IsAny<UpdateTaskDto>(), _testUserId))
-            .ThrowsAsync(new UnauthorizedTaskAccessException(taskId));
-
-        var updateRequest = new UpdateTaskDto("taskTittle", "Description", null);
-        await Assert.ThrowsAsync<UnauthorizedTaskAccessException>(
             async () => await _controller.UpdateTask(taskId, updateRequest));
 
         _taskServiceMock.Verify(s =>

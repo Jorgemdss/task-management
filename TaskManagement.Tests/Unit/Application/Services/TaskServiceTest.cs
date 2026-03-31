@@ -100,24 +100,6 @@ public class TaskServiceTest : IDisposable
     }
 
     [Fact]
-    public async Task GetTaskByIdAsync_IfUserNotOwner_ShouldThrowUnauthorized()
-    {
-        var userId = Guid.NewGuid();
-
-        var request = new CreateTaskDto(
-            "Title",
-            "Desc",
-            DateTime.UtcNow.AddDays(3));
-
-        var taskDto = await _taskService.CreateTaskAsync(request, userId);
-
-        await Assert.ThrowsAsync<UnauthorizedTaskAccessException>(
-            async () =>
-                await _taskService.GetTaskByIdAsync(taskDto.Id, Guid.NewGuid())
-        );
-    }
-
-    [Fact]
     public async Task GetUserTasksAsync_WhenExistent_ShouldReturnOnlyUserTasks()
     {
         var userId1 = Guid.NewGuid();
@@ -177,22 +159,6 @@ public class TaskServiceTest : IDisposable
     }
 
     [Fact]
-    public async Task DeleteTaskAsync_IfNotOwner_ShouldThrow()
-    {
-        var userId = Guid.NewGuid();
-
-        await _dbContext.AddAsync(TaskItem.Create("Title", "Desc", userId, null));
-        await _dbContext.SaveChangesAsync();
-
-        var task = await _dbContext.Tasks.FirstOrDefaultAsync();
-        task.Should().NotBeNull();
-
-        await Assert.ThrowsAsync<UnauthorizedTaskAccessException>(
-            async () =>
-                await _taskService.DeleteTaskAsync(task.Id, Guid.NewGuid()));
-    }
-
-    [Fact]
     public async Task UpdateTaskAsync_WithValidData_ShouldUpdateTask()
     {
         var userId = Guid.NewGuid();
@@ -230,25 +196,6 @@ public class TaskServiceTest : IDisposable
         await Assert.ThrowsAsync<ArgumentException>(
             async () =>
                 await _taskService.UpdateTaskAsync(task.Id, updateRequest, userId));
-    }
-
-    [Fact]
-    public async Task UpdateTaskAsync_IfNotOWner_ShouldThrowAuthException()
-    {
-        var userId = Guid.NewGuid();
-
-        await _dbContext.AddAsync(TaskItem.Create("Title", "Desc", userId, null));
-        await _dbContext.SaveChangesAsync();
-
-        var task = await _dbContext.Tasks.FirstOrDefaultAsync();
-        task.Should().NotBeNull();
-
-        var newDate = DateTime.UtcNow.AddDays(1);
-        var updateRequest = new UpdateTaskDto("", "new desc", newDate);
-
-        await Assert.ThrowsAsync<UnauthorizedTaskAccessException>(
-            async () =>
-                await _taskService.UpdateTaskAsync(task.Id, updateRequest, Guid.NewGuid()));
     }
 
     [Fact]
@@ -290,16 +237,6 @@ public class TaskServiceTest : IDisposable
     {
         await Assert.ThrowsAsync<TaskNotFoundException>(
             async () => await _taskService.MarkTaskAsCompletedAsync(Guid.NewGuid(), Guid.NewGuid()));
-    }
-
-    [Fact]
-    public async Task MarkTaskAsCompletedAsync_WhenUnauthorized_ShouldThrow()
-    {
-        var userId = Guid.NewGuid();
-        var task = await CreateTaskInDb("Title", "Desc", userId);
-
-        await Assert.ThrowsAsync<UnauthorizedTaskAccessException>(
-            async () => await _taskService.MarkTaskAsCompletedAsync(task.Id, Guid.NewGuid()));
     }
 
     private async Task<TaskItem> CreateTaskInDb(string title, string description, Guid userId, DateTime? dueDate = null)

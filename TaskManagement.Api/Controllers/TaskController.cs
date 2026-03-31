@@ -17,16 +17,14 @@ public class TaskController : ControllerBase
 
     private readonly ILogger _logger;
     private readonly ITaskService _taskService;
-    private readonly IAuthorizationService _authorizationService;
-
-    public TaskController(ILogger<TaskController> logger, ITaskService taskService, IAuthorizationService authorizationService)
+    public TaskController(ILogger<TaskController> logger, ITaskService taskService)
     {
         _logger = logger;
         _taskService = taskService;
-        _authorizationService = authorizationService;
     }
 
     [HttpPost]
+    [AuthorizeResourceOwner<ITaskService>(resourceName: "task")]
     public async Task<IActionResult> CreateTask(CreateTaskDto request)
     {
         var userId = User.GetUserId();
@@ -64,6 +62,7 @@ public class TaskController : ControllerBase
 
 
     [HttpPut("{id}")]
+    [AuthorizeResourceOwner<ITaskService>(resourceName: "task")]
     public async Task<IActionResult> UpdateTask(Guid id, UpdateTaskDto request)
     {
         var userId = User.GetUserId();
@@ -75,6 +74,7 @@ public class TaskController : ControllerBase
     }
 
     [HttpDelete("{id}")]
+    [AuthorizeResourceOwner<ITaskService>(resourceName: "task")]
     public async Task<IActionResult> DeleteTask(Guid id)
     {
         var userId = User.GetUserId();
