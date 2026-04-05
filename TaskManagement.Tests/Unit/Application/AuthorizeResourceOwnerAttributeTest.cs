@@ -12,6 +12,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.IdentityModel.Tokens;
 using Moq;
 using TaskManagement.Application.Attributes;
+using TaskManagement.Application.Common.Constants;
 using TaskManagement.Application.Common.Interfaces;
 using TaskManagement.Infrastructure.AuthHandlers;
 using Xunit;
@@ -67,7 +68,14 @@ public class AuthorizeResourceOwnerAttributeTest
     {
         var resourceId = Guid.NewGuid();
         var realOwnerId = Guid.NewGuid();
-        var user = new ClaimsPrincipal(new ClaimsIdentity([new Claim(ClaimTypes.NameIdentifier, Guid.NewGuid().ToString())]));
+        var user = new ClaimsPrincipal(
+            new ClaimsIdentity(
+                [
+                    new Claim(ClaimTypes.NameIdentifier, Guid.NewGuid().ToString()),
+                    new Claim(ClaimTypes.Role, Role.UserRole)
+                ]
+            )
+        );
 
         _resourceOwnerServiceMock
             .Setup(s => s.GetOwnerIdAsync(resourceId))

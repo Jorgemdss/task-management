@@ -1,4 +1,3 @@
-
 using System.Net;
 using System.Security.Claims;
 using FluentAssertions;
@@ -26,7 +25,6 @@ public class TaskControllerTest
 
     private readonly TaskController _controller;
     private readonly Guid _testUserId;
-
 
     public TaskControllerTest()
     {
@@ -71,30 +69,28 @@ public class TaskControllerTest
 
         _taskServiceMock.Verify(
             s => s.CreateTaskAsync(It.IsAny<CreateTaskDto>(), _testUserId),
-            Times.Once);
+            Times.Once
+        );
     }
 
     [Fact]
     public async Task CreateTask_WithInvalidData_ShouldThrow()
     {
-        var createRequest = new CreateTaskDto(
-            "",
-            "Some description",
-            DateTime.UtcNow.AddDays(2)
-        );
+        var createRequest = new CreateTaskDto("", "Some description", DateTime.UtcNow.AddDays(2));
 
         _taskServiceMock
             .Setup(s => s.CreateTaskAsync(It.IsAny<CreateTaskDto>(), _testUserId))
             .Throws(new ArgumentException());
 
-        await Assert.ThrowsAsync<ArgumentException>(
-            async () => await _controller.CreateTask(createRequest));
+        await Assert.ThrowsAsync<ArgumentException>(async () =>
+            await _controller.CreateTask(createRequest)
+        );
 
         _taskServiceMock.Verify(
             s => s.CreateTaskAsync(It.IsAny<CreateTaskDto>(), _testUserId),
-            Times.Once);
+            Times.Once
+        );
     }
-
 
     [Fact]
     public async Task GetTask_WithValidId_ShouldReturn200Ok()
@@ -116,15 +112,12 @@ public class TaskControllerTest
             .Setup(s => s.GetTaskByIdAsync(It.IsAny<Guid>(), _testUserId))
             .ReturnsAsync(expectedTaskDto);
 
-
         var operation = await _controller.GetTask(taskId);
         var result = operation.Should().BeOfType<OkObjectResult>().Subject;
         result.StatusCode.Should().Be(StatusCodes.Status200OK);
         result.Value.Should().BeEquivalentTo(expectedTaskDto);
 
-        _taskServiceMock.Verify(s =>
-            s.GetTaskByIdAsync(It.IsAny<Guid>(), _testUserId),
-            Times.Once);
+        _taskServiceMock.Verify(s => s.GetTaskByIdAsync(It.IsAny<Guid>(), _testUserId), Times.Once);
     }
 
     [Fact]
@@ -136,27 +129,41 @@ public class TaskControllerTest
             .Setup(s => s.GetTaskByIdAsync(It.IsAny<Guid>(), _testUserId))
             .Throws(new TaskNotFoundException(taskId));
 
-        await Assert.ThrowsAsync<TaskNotFoundException>(
-            async () => await _controller.GetTask(taskId));
+        await Assert.ThrowsAsync<TaskNotFoundException>(async () =>
+            await _controller.GetTask(taskId)
+        );
 
-        _taskServiceMock.Verify(s =>
-            s.GetTaskByIdAsync(It.IsAny<Guid>(), _testUserId),
-            Times.Once);
+        _taskServiceMock.Verify(s => s.GetTaskByIdAsync(It.IsAny<Guid>(), _testUserId), Times.Once);
     }
-
 
     [Fact]
     public async Task GetUserTasks_ShouldReturn200Ok()
     {
         var expectedTasks = new List<TaskDto>
         {
-            new (Guid.NewGuid(), _testUserId, "Some title", "Some Description", false, DateTime.UtcNow, null,null),
-            new (Guid.NewGuid(), _testUserId, "Some title 2", "AAAA", false, DateTime.UtcNow, null,null),
+            new(
+                Guid.NewGuid(),
+                _testUserId,
+                "Some title",
+                "Some Description",
+                false,
+                DateTime.UtcNow,
+                null,
+                null
+            ),
+            new(
+                Guid.NewGuid(),
+                _testUserId,
+                "Some title 2",
+                "AAAA",
+                false,
+                DateTime.UtcNow,
+                null,
+                null
+            ),
         };
 
-        _taskServiceMock.Setup(s =>
-            s.GetUserTasksAsync(_testUserId))
-            .ReturnsAsync(expectedTasks);
+        _taskServiceMock.Setup(s => s.GetUserTasksAsync(_testUserId)).ReturnsAsync(expectedTasks);
 
         var operation = await _controller.GetUserTasks();
 
@@ -172,13 +179,31 @@ public class TaskControllerTest
 
         var taskTittle = "Bug 333";
         var newDescription = "UI bug when clicking 'retry' button";
-        var originalTask = new TaskDto(Guid.NewGuid(), _testUserId, taskTittle, "UI bug when clicking 'cancel' button", false, DateTime.UtcNow, null, null);
+        var originalTask = new TaskDto(
+            Guid.NewGuid(),
+            _testUserId,
+            taskTittle,
+            "UI bug when clicking 'cancel' button",
+            false,
+            DateTime.UtcNow,
+            null,
+            null
+        );
 
         var updateRequest = new UpdateTaskDto(taskTittle, newDescription, null);
-        var expectedTask = new TaskDto(originalTask.Id, _testUserId, taskTittle, newDescription, false, DateTime.UtcNow, null, updatedAtDate);
+        var expectedTask = new TaskDto(
+            originalTask.Id,
+            _testUserId,
+            taskTittle,
+            newDescription,
+            false,
+            DateTime.UtcNow,
+            null,
+            updatedAtDate
+        );
 
-        _taskServiceMock.Setup(s =>
-            s.UpdateTaskAsync(originalTask.Id, updateRequest, _testUserId))
+        _taskServiceMock
+            .Setup(s => s.UpdateTaskAsync(originalTask.Id, updateRequest, _testUserId))
             .ReturnsAsync(expectedTask);
 
         var operation = await _controller.UpdateTask(originalTask.Id, updateRequest);
@@ -188,9 +213,10 @@ public class TaskControllerTest
 
         result.Value.As<TaskDto>().UpdatedAt.Should().Be(updatedAtDate);
 
-        _taskServiceMock.Verify(s =>
-            s.UpdateTaskAsync(originalTask.Id, updateRequest, _testUserId),
-            Times.Once);
+        _taskServiceMock.Verify(
+            s => s.UpdateTaskAsync(originalTask.Id, updateRequest, _testUserId),
+            Times.Once
+        );
     }
 
     [Fact]
@@ -198,17 +224,19 @@ public class TaskControllerTest
     {
         var taskId = Guid.NewGuid();
 
-        _taskServiceMock.Setup(s =>
-            s.UpdateTaskAsync(It.IsAny<Guid>(), It.IsAny<UpdateTaskDto>(), _testUserId))
+        _taskServiceMock
+            .Setup(s => s.UpdateTaskAsync(It.IsAny<Guid>(), It.IsAny<UpdateTaskDto>(), _testUserId))
             .ThrowsAsync(new TaskNotFoundException(taskId));
 
         var updateRequest = new UpdateTaskDto("taskTittle", "Description", null);
-        await Assert.ThrowsAsync<TaskNotFoundException>(
-            async () => await _controller.UpdateTask(taskId, updateRequest));
+        await Assert.ThrowsAsync<TaskNotFoundException>(async () =>
+            await _controller.UpdateTask(taskId, updateRequest)
+        );
 
-        _taskServiceMock.Verify(s =>
-            s.UpdateTaskAsync(It.IsAny<Guid>(), It.IsAny<UpdateTaskDto>(), _testUserId),
-            Times.Once);
+        _taskServiceMock.Verify(
+            s => s.UpdateTaskAsync(It.IsAny<Guid>(), It.IsAny<UpdateTaskDto>(), _testUserId),
+            Times.Once
+        );
     }
 
     [Fact]
@@ -223,9 +251,7 @@ public class TaskControllerTest
         var operation = await _controller.DeleteTask(taskId);
         operation.Should().BeOfType<NoContentResult>();
 
-        _taskServiceMock.Verify(s =>
-            s.DeleteTaskAsync(It.IsAny<Guid>(), _testUserId),
-            Times.Once);
+        _taskServiceMock.Verify(s => s.DeleteTaskAsync(It.IsAny<Guid>(), _testUserId), Times.Once);
     }
 
     [Fact]
@@ -237,8 +263,9 @@ public class TaskControllerTest
             .Setup(s => s.DeleteTaskAsync(It.IsAny<Guid>(), _testUserId))
             .ThrowsAsync(new TaskNotFoundException(taskId));
 
-        await Assert.ThrowsAsync<TaskNotFoundException>(
-            async () => await _controller.DeleteTask(taskId));
+        await Assert.ThrowsAsync<TaskNotFoundException>(async () =>
+            await _controller.DeleteTask(taskId)
+        );
     }
 
     [Fact]
@@ -247,7 +274,16 @@ public class TaskControllerTest
         var taskId = Guid.NewGuid();
 
         var updatedAt = DateTime.UtcNow.AddSeconds(1);
-        var expectedTask = new TaskDto(taskId, _testUserId, "Title", "Desc", true, DateTime.UtcNow, null, updatedAt);
+        var expectedTask = new TaskDto(
+            taskId,
+            _testUserId,
+            "Title",
+            "Desc",
+            true,
+            DateTime.UtcNow,
+            null,
+            updatedAt
+        );
 
         _taskServiceMock
             .Setup(s => s.MarkTaskAsCompletedAsync(It.IsAny<Guid>(), _testUserId))
@@ -258,7 +294,9 @@ public class TaskControllerTest
         result.Value.Should().BeEquivalentTo(expectedTask);
 
         _taskServiceMock.Verify(
-            s => s.MarkTaskAsCompletedAsync(It.IsAny<Guid>(), _testUserId), Times.Once);
+            s => s.MarkTaskAsCompletedAsync(It.IsAny<Guid>(), _testUserId),
+            Times.Once
+        );
     }
 
     [Fact]
@@ -267,7 +305,16 @@ public class TaskControllerTest
         var taskId = Guid.NewGuid();
 
         var updatedAt = DateTime.UtcNow.AddSeconds(1);
-        var expectedTask = new TaskDto(taskId, _testUserId, "Title", "Desc", false, DateTime.UtcNow, null, updatedAt);
+        var expectedTask = new TaskDto(
+            taskId,
+            _testUserId,
+            "Title",
+            "Desc",
+            false,
+            DateTime.UtcNow,
+            null,
+            updatedAt
+        );
 
         _taskServiceMock
             .Setup(s => s.MarkTaskAsIncompleteAsync(It.IsAny<Guid>(), _testUserId))
@@ -278,18 +325,19 @@ public class TaskControllerTest
         result.Value.Should().BeEquivalentTo(expectedTask);
 
         _taskServiceMock.Verify(
-            s => s.MarkTaskAsIncompleteAsync(It.IsAny<Guid>(), _testUserId), Times.Once);
+            s => s.MarkTaskAsIncompleteAsync(It.IsAny<Guid>(), _testUserId),
+            Times.Once
+        );
     }
-
 
     private void SetupSimpleUserClaims(Guid userId)
     {
         // Create the claims that would normally come from the JWT
         var claims = new List<Claim>
         {
-            new (ClaimTypes.NameIdentifier, userId.ToString()),
-            new (ClaimTypes.Email, "test@example.com"),
-            new (ClaimTypes.Role, Role.UserRole)
+            new(ClaimTypes.NameIdentifier, userId.ToString()),
+            new(ClaimTypes.Email, "test@example.com"),
+            new(ClaimTypes.Role, Role.UserRole),
         };
 
         // Creat an identity with our claims and give it a name "TestAuth"
@@ -301,31 +349,7 @@ public class TaskControllerTest
         // Inject the HttpContext with your principal because in a test scenario HttpContext is null
         _controller.ControllerContext = new ControllerContext
         {
-            HttpContext = new DefaultHttpContext { User = claimsPrincipal }
+            HttpContext = new DefaultHttpContext { User = claimsPrincipal },
         };
     }
-
-    // TODO JS: admin user
-    // private void SetupAdminUserClaims(Guid userId)
-    // {
-    //     // Create the claims that would normally come from the JWT
-    //     var claims = new List<Claim>
-    //     {
-    //         new (ClaimTypes.NameIdentifier, userId.ToString()),
-    //         new (ClaimTypes.Email, "test@example.com"),
-    //         new (ClaimTypes.Role, Role.AdminRole)
-    //     };
-
-    //     // Creat an identity with our claims and give it a name "TestAuth"
-    //     var identity = new ClaimsIdentity(claims, "TestAuth");
-
-    //     // Wrap the entity in the principal
-    //     var claimsPrincipal = new ClaimsPrincipal(identity);
-
-    //     // Inject the HttpContext with your principal because in a test scenario HttpContext is null
-    //     _controller.ControllerContext = new ControllerContext
-    //     {
-    //         HttpContext = new DefaultHttpContext { User = claimsPrincipal }
-    //     };
-    // }
 }

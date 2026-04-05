@@ -5,9 +5,14 @@ using TaskManagement.Domain.Models;
 
 namespace TaskManagement.Infrastructure.AuthHandlers;
 
-public class UserOwnedResourcePermissionHandler : AuthorizationHandler<UserOwnedResourcePermission, Guid>
+public class UserOwnedResourcePermissionHandler
+    : AuthorizationHandler<UserOwnedResourcePermission, Guid>
 {
-    protected override Task HandleRequirementAsync(AuthorizationHandlerContext context, UserOwnedResourcePermission requirement, Guid ownerId)
+    protected override Task HandleRequirementAsync(
+        AuthorizationHandlerContext context,
+        UserOwnedResourcePermission requirement,
+        Guid ownerId
+    )
     {
         if (IsAdmin(context.User) || IsOwner(context.User, ownerId))
         {
