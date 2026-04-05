@@ -4,7 +4,6 @@ namespace TaskManagement.Api.Extensions;
 
 public static class UserClaimExtensions
 {
-
     public static Guid GetUserId(this ClaimsPrincipal user)
     {
         var userIdClaim = user.FindFirst(ClaimTypes.NameIdentifier)?.Value;
@@ -21,5 +20,4 @@ public static class UserClaimExtensions
 
         return userId;
     }
-
 }

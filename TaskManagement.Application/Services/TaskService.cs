@@ -43,15 +43,14 @@ public class TaskService : ITaskService
         await _dbContext.SaveChangesAsync();
 
         _logger.LogInformation("Task {TaskId} deleted successfully", taskId);
-
     }
 
     public async Task<Guid> GetOwnerIdAsync(Guid resourceId)
     {
-        var task = await _dbContext.Tasks
-           .Where(t => t.Id == resourceId)
-           .Select(t => t.Id)
-           .SingleOrDefaultAsync();
+        var task = await _dbContext
+            .Tasks.Where(t => t.Id == resourceId)
+            .Select(t => t.Id)
+            .SingleOrDefaultAsync();
 
         if (task == default)
             throw new TaskNotFoundException(resourceId);
@@ -67,8 +66,8 @@ public class TaskService : ITaskService
 
     public async Task<IEnumerable<TaskDto>> GetUserTasksAsync(Guid userId)
     {
-        var tasks = await _dbContext.Tasks
-            .Where(t => t.UserId == userId)
+        var tasks = await _dbContext
+            .Tasks.Where(t => t.UserId == userId)
             .OrderByDescending(t => t.CreatedAt)
             .ToListAsync();
 

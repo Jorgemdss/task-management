@@ -1,4 +1,5 @@
 namespace TaskManagement.Domain.Models;
+
 public class TaskItem : BaseEntity
 {
     public string Title { get; private set; } = string.Empty;
@@ -24,7 +25,7 @@ public class TaskItem : BaseEntity
             UserId = userId,
             DueDate = dueDate,
             IsCompleted = false,
-            CreatedAt = DateTime.UtcNow
+            CreatedAt = DateTime.UtcNow,
         };
     }
 
@@ -51,5 +52,4 @@ public class TaskItem : BaseEntity
         IsCompleted = false;
         UpdatedAt = DateTime.UtcNow;
     }
-
 }

@@ -5,14 +5,17 @@ Intro
 Sample project for studying .net features, architectural design decisions and practicing concepts.
 
 Features:
-- [x] Containerized
+- [x] Containerized Api + DB
 - [x] Layer separation
 - [x] Authentication (Identity)
 - [x] Authorization
+- [x] Roles
 - [x] Unit tests
 - [x] No Repositories
-- [x] Role based authorization (through AuthorizationHandler)
-- [x] Generic permission custom attribute (ensure that only owner or admin can perform operations on owned resources)
+- [x] Custom attribute using AuthorizationHandler (ensure only owner/admin can perform operations on resources)
+- [ ] Redis
+- [ ] MediatR with CQRS
+- [ ] Domain events
 ---
 
 Running the docker container
