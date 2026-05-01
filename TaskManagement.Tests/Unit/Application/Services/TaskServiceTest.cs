@@ -1,9 +1,11 @@
 using FluentAssertions;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Metadata.Internal;
 using Microsoft.Extensions.Logging;
 using Moq;
 using TaskManagement.Application.Common.Interfaces;
 using TaskManagement.Application.DTOs;
+using TaskManagement.Application.Interfaces;
 using TaskManagement.Application.Services;
 using TaskManagement.Domain.Exceptions;
 using TaskManagement.Domain.Models;
@@ -16,16 +18,20 @@ public class TaskServiceTest : IDisposable
 {
     private readonly AppDbContext _dbContext;
     private readonly Mock<ILogger<TaskService>> _logger;
+    private readonly Mock<ICachedService> _cache;
     private readonly TaskService _taskService;
 
     public TaskServiceTest()
     {
-        var optionsBuilder = new DbContextOptionsBuilder<AppDbContext>().UseInMemoryDatabase(databaseName: Guid.NewGuid().ToString());
+        var optionsBuilder = new DbContextOptionsBuilder<AppDbContext>().UseInMemoryDatabase(
+            databaseName: Guid.NewGuid().ToString()
+        );
 
         _dbContext = new AppDbContext(optionsBuilder.Options);
         _logger = new Mock<ILogger<TaskService>>();
+        _cache = new Mock<ICachedService>();
 
-        _taskService = new TaskService(_dbContext, _logger.Object);
+        _taskService = new TaskService(_dbContext, _logger.Object, _cache.Object);
     }
 
     public void Dispose()
@@ -39,10 +45,7 @@ public class TaskServiceTest : IDisposable
     {
         var userId = Guid.NewGuid();
 
-        var request = new CreateTaskDto(
-            "Title",
-            "Desc",
-            DateTime.UtcNow.AddDays(3));
+        var request = new CreateTaskDto("Title", "Desc", DateTime.UtcNow.AddDays(3));
 
         var taskDto = await _taskService.CreateTaskAsync(request, userId);
 
@@ -62,23 +65,20 @@ public class TaskServiceTest : IDisposable
     {
         var userId = Guid.NewGuid();
 
-        var request = new CreateTaskDto(
-            "",
-            "Desc",
-            DateTime.UtcNow.AddDays(3));
+        var request = new CreateTaskDto("", "Desc", DateTime.UtcNow.AddDays(3));
 
-        await Assert.ThrowsAsync<ArgumentException>(async () => await _taskService.CreateTaskAsync(request, userId));
+        await Assert.ThrowsAsync<ArgumentException>(async () =>
+            await _taskService.CreateTaskAsync(request, userId)
+        );
     }
 
     [Fact]
     public async Task GetTaskByIdAsync_WhenTaskExists_ShouldReturnTask()
     {
+        // TOTO JS: fix test by mocking cache
         var userId = Guid.NewGuid();
 
-        var request = new CreateTaskDto(
-            "Title",
-            "Desc",
-            DateTime.UtcNow.AddDays(3));
+        var request = new CreateTaskDto("Title", "Desc", DateTime.UtcNow.AddDays(3));
 
         var taskDto = await _taskService.CreateTaskAsync(request, userId);
 
@@ -95,8 +95,23 @@ public class TaskServiceTest : IDisposable
     [Fact]
     public async Task GetTaskByIdAsync_WhenDoesntExist_ShouldThrow()
     {
-        await Assert.ThrowsAsync<TaskNotFoundException>(
-            async () => await _taskService.GetTaskByIdAsync(Guid.NewGuid(), Guid.NewGuid()));
+        var t = TaskItem.Create("title", "desc", Guid.NewGuid(), DateTime.Now.AddDays(1));
+        _cache
+            .Setup(s =>
+                s.GetOrAddAsync(
+                    It.IsAny<string>(),
+                    It.IsAny<Func<Task<TaskItem>>>(),
+                    It.IsAny<TimeSpan>(),
+                    It.IsAny<CancellationToken>()
+                )
+            )
+            .Returns<string, Func<Task<TaskItem?>>, TimeSpan?, CancellationToken>(
+                (k, f, ttl, ct) => f()
+            );
+
+        await Assert.ThrowsAsync<TaskNotFoundException>(async () =>
+            await _taskService.GetTaskByIdAsync(Guid.NewGuid(), Guid.NewGuid())
+        );
     }
 
     [Fact]
@@ -105,11 +120,23 @@ public class TaskServiceTest : IDisposable
         var userId1 = Guid.NewGuid();
         var userId2 = Guid.NewGuid();
 
-        await _taskService.CreateTaskAsync(new CreateTaskDto("Title 1", "short desc", null), userId1);
-        await _taskService.CreateTaskAsync(new CreateTaskDto("New Task nice", "short desc", null), userId1);
+        await _taskService.CreateTaskAsync(
+            new CreateTaskDto("Title 1", "short desc", null),
+            userId1
+        );
+        await _taskService.CreateTaskAsync(
+            new CreateTaskDto("New Task nice", "short desc", null),
+            userId1
+        );
 
-        await _taskService.CreateTaskAsync(new CreateTaskDto("Something", "short desc 2", null), userId2);
-        await _taskService.CreateTaskAsync(new CreateTaskDto("Do this!", "short desc 2", null), userId2);
+        await _taskService.CreateTaskAsync(
+            new CreateTaskDto("Something", "short desc 2", null),
+            userId2
+        );
+        await _taskService.CreateTaskAsync(
+            new CreateTaskDto("Do this!", "short desc 2", null),
+            userId2
+        );
 
         var user1TasksDtos = await _taskService.GetUserTasksAsync(userId1);
 
@@ -117,7 +144,6 @@ public class TaskServiceTest : IDisposable
         user1TasksDtos.Should().HaveCount(2);
         user1TasksDtos.Where(t => t.UserId == userId1).Should().HaveCount(2);
         user1TasksDtos.Where(t => t.UserId == userId2).Should().HaveCount(0);
-
     }
 
     [Fact]
@@ -141,7 +167,6 @@ public class TaskServiceTest : IDisposable
         tasksCount.Should().Be(0); // Verify database is empty
     }
 
-
     [Fact]
     public async Task DeleteTaskAsync_IfNotExists_ShouldThrow()
     {
@@ -153,9 +178,9 @@ public class TaskServiceTest : IDisposable
         var task = await _dbContext.Tasks.FirstOrDefaultAsync();
         task.Should().NotBeNull();
 
-        await Assert.ThrowsAsync<TaskNotFoundException>(
-            async () =>
-                await _taskService.DeleteTaskAsync(Guid.NewGuid(), userId));
+        await Assert.ThrowsAsync<TaskNotFoundException>(async () =>
+            await _taskService.DeleteTaskAsync(Guid.NewGuid(), userId)
+        );
     }
 
     [Fact]
@@ -193,9 +218,9 @@ public class TaskServiceTest : IDisposable
         var newDate = DateTime.UtcNow.AddDays(1);
         var updateRequest = new UpdateTaskDto("", "new desc", newDate);
 
-        await Assert.ThrowsAsync<ArgumentException>(
-            async () =>
-                await _taskService.UpdateTaskAsync(task.Id, updateRequest, userId));
+        await Assert.ThrowsAsync<ArgumentException>(async () =>
+            await _taskService.UpdateTaskAsync(task.Id, updateRequest, userId)
+        );
     }
 
     [Fact]
@@ -213,7 +238,6 @@ public class TaskServiceTest : IDisposable
         updatedTask.IsCompleted.Should().BeTrue();
         updatedTask.UpdatedAt.Should().NotBeNull();
     }
-
 
     [Fact]
     public async Task MarkTaskAsIncompletedAsync_IfValid_ShouldSetCompletedToFalse()
@@ -235,11 +259,17 @@ public class TaskServiceTest : IDisposable
     [Fact]
     public async Task MarkTaskAsCompletedAsync_WhenNotFound_ShouldThrow()
     {
-        await Assert.ThrowsAsync<TaskNotFoundException>(
-            async () => await _taskService.MarkTaskAsCompletedAsync(Guid.NewGuid(), Guid.NewGuid()));
+        await Assert.ThrowsAsync<TaskNotFoundException>(async () =>
+            await _taskService.MarkTaskAsCompletedAsync(Guid.NewGuid(), Guid.NewGuid())
+        );
     }
 
-    private async Task<TaskItem> CreateTaskInDb(string title, string description, Guid userId, DateTime? dueDate = null)
+    private async Task<TaskItem> CreateTaskInDb(
+        string title,
+        string description,
+        Guid userId,
+        DateTime? dueDate = null
+    )
     {
         var task = TaskItem.Create(title, description, userId, dueDate);
         await _dbContext.AddAsync(task);

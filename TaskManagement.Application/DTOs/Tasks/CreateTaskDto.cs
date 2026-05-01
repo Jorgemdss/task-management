@@ -1,8 +1,3 @@
 namespace TaskManagement.Application.DTOs;
 
-public record CreateTaskDto(
-    string Title,
-    string Description,
-    DateTime? DueDate
-);
-
+public record CreateTaskDto(string Title, string Description, DateTime? DueDate);

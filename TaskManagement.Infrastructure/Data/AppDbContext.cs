@@ -7,12 +7,12 @@ using TaskManagement.Infrastructure.Identity;
 
 namespace TaskManagement.Infrastructure.Data;
 
-public class AppDbContext : IdentityDbContext<ApplicationUser, IdentityRole<Guid>, Guid>, IApplicationDbContext
+public class AppDbContext
+    : IdentityDbContext<ApplicationUser, IdentityRole<Guid>, Guid>,
+        IApplicationDbContext
 {
-
-    public AppDbContext(DbContextOptions<AppDbContext> options) : base(options)
-    {
-    }
+    public AppDbContext(DbContextOptions<AppDbContext> options)
+        : base(options) { }
 
     public DbSet<TaskItem> Tasks => Set<TaskItem>();
 

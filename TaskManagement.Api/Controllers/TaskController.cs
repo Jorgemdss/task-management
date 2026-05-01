@@ -14,9 +14,9 @@ namespace TaskManagement.Api.Controllers;
 [Route("api/[controller]")]
 public class TaskController : ControllerBase
 {
-
     private readonly ILogger _logger;
     private readonly ITaskService _taskService;
+
     public TaskController(ILogger<TaskController> logger, ITaskService taskService)
     {
         _logger = logger;
@@ -24,12 +24,10 @@ public class TaskController : ControllerBase
     }
 
     [HttpPost]
-    [AuthorizeResourceOwner<ITaskService>(resourceName: "task")]
     public async Task<IActionResult> CreateTask(CreateTaskDto request)
     {
         var userId = User.GetUserId();
         _logger.LogInformation("Creating new task for user {userId}", userId);
-
 
         var result = await _taskService.CreateTaskAsync(request, userId);
         _logger.LogInformation("Task created with success task for user {userId}", userId);
@@ -59,7 +57,6 @@ public class TaskController : ControllerBase
 
         return Ok(result);
     }
-
 
     [HttpPut("{id}")]
     [AuthorizeResourceOwner<ITaskService>(resourceName: "task")]
@@ -107,4 +104,3 @@ public class TaskController : ControllerBase
         return Ok(result);
     }
 }
-

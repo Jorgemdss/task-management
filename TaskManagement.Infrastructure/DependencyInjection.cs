@@ -4,6 +4,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using TaskManagement.Application.Common.Interfaces;
+using TaskManagement.Application.Interfaces;
 using TaskManagement.Infrastructure.AuthHandlers;
 using TaskManagement.Infrastructure.Data;
 using TaskManagement.Infrastructure.Identity;
@@ -24,6 +25,13 @@ public static class DependencyInjection
             ?? throw new InvalidOperationException(
                 "Connection string 'DefaultConnection' not found."
             );
+
+        // Redis
+        services.AddStackExchangeRedisCache(options =>
+        {
+            options.Configuration = config["Redis:ConnectionString"];
+            options.InstanceName = "TaskManagement";
+        });
 
         services.AddDbContext<AppDbContext>(options =>
         {
@@ -58,6 +66,7 @@ public static class DependencyInjection
 
         services.AddScoped<IAuthService, AuthService>();
         services.AddScoped<IAuthorizationHandler, UserOwnedResourcePermissionHandler>();
+        services.AddScoped<ICachedService, RedisCacheService>();
         return services;
     }
 }

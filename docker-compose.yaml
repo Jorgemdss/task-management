@@ -26,6 +26,8 @@ services:
     depends_on:
       sqlserver:
         condition: service_healthy
+      redis:
+        condition: service_started
     container_name: taskmanagement-api
     environment:
       - ASPNETCORE_ENVIRONMENT=Development
@@ -38,6 +40,13 @@ services:
     volumes:
       - ./logs:/app/logs
     restart: on-failure
+
+  redis:
+    image: redis:7-alpine
+    container_name: taskmanagement-redis
+    ports:
+      - "6379:6379"
+    restart: unless-stopped
 
 networks:
   taskmanagement-network:

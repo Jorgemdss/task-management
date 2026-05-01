@@ -1,7 +1,9 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
+using TaskManagement.Application.Common;
 using TaskManagement.Application.Common.Interfaces;
 using TaskManagement.Application.DTOs;
+using TaskManagement.Application.Interfaces;
 using TaskManagement.Application.Mappers;
 using TaskManagement.Domain.Exceptions;
 using TaskManagement.Domain.Models;
@@ -12,11 +14,17 @@ public class TaskService : ITaskService
 {
     private IApplicationDbContext _dbContext;
     private ILogger<TaskService> _logger;
+    private ICachedService _cache;
 
-    public TaskService(IApplicationDbContext dbContext, ILogger<TaskService> logger)
+    public TaskService(
+        IApplicationDbContext dbContext,
+        ILogger<TaskService> logger,
+        ICachedService cache
+    )
     {
         _dbContext = dbContext;
         _logger = logger;
+        _cache = cache;
     }
 
     public async Task<TaskDto> CreateTaskAsync(CreateTaskDto dto, Guid userId)
@@ -27,6 +35,7 @@ public class TaskService : ITaskService
 
         _dbContext.Tasks.Add(task);
         await _dbContext.SaveChangesAsync();
+        await _cache.SetAsync(CacheKeys.Task(task.Id), task);
 
         _logger.LogInformation("Task {id} created with success!", task.Id);
 
@@ -35,6 +44,7 @@ public class TaskService : ITaskService
 
     public async Task DeleteTaskAsync(Guid taskId, Guid userId)
     {
+        // TODO JS: implement cache
         _logger.LogInformation("Deleting task {id}", taskId);
 
         var task = await GetTaskEntityAsync(taskId, userId);
@@ -47,6 +57,7 @@ public class TaskService : ITaskService
 
     public async Task<Guid> GetOwnerIdAsync(Guid resourceId)
     {
+        // TODO JS: implement cache
         var task = await _dbContext
             .Tasks.Where(t => t.Id == resourceId)
             .Select(t => t.Id)
@@ -60,12 +71,27 @@ public class TaskService : ITaskService
 
     public async Task<TaskDto> GetTaskByIdAsync(Guid taskId, Guid userId)
     {
-        var task = await GetTaskEntityAsync(taskId, userId);
+        var getEntityTask = _dbContext.Tasks.FirstOrDefaultAsync(t => t.Id == taskId);
+
+        var task = await _cache.GetOrAddAsync(
+            key: CacheKeys.Task(taskId),
+            factory: () => getEntityTask,
+            ttl: TimeSpan.FromMinutes(10)
+        );
+
+        if (task == null)
+        {
+            _logger.LogError("Task with id: {id} does not exist.", taskId);
+            throw new TaskNotFoundException(taskId);
+        }
+
         return task.MapToDto();
     }
 
     public async Task<IEnumerable<TaskDto>> GetUserTasksAsync(Guid userId)
     {
+        // TODO JS: implement cache
+
         var tasks = await _dbContext
             .Tasks.Where(t => t.UserId == userId)
             .OrderByDescending(t => t.CreatedAt)
@@ -76,6 +102,7 @@ public class TaskService : ITaskService
 
     public async Task<TaskDto> MarkTaskAsCompletedAsync(Guid taskId, Guid userId)
     {
+        // TODO JS: implement cache
         _logger.LogInformation("Marking task {TaskId} as completed", taskId);
 
         var task = await GetTaskEntityAsync(taskId, userId);
@@ -89,6 +116,7 @@ public class TaskService : ITaskService
 
     public async Task<TaskDto> MarkTaskAsIncompleteAsync(Guid taskId, Guid userId)
     {
+        // TODO JS: implement cache
         _logger.LogInformation("Marking task {TaskId} as incompleted", taskId);
 
         var task = await GetTaskEntityAsync(taskId, userId);
@@ -102,6 +130,7 @@ public class TaskService : ITaskService
 
     public async Task<TaskDto> UpdateTaskAsync(Guid taskId, UpdateTaskDto dto, Guid userId)
     {
+        // TODO JS: implement cache
         _logger.LogInformation("Updating task for user {UserId}", userId);
 
         var task = await GetTaskEntityAsync(taskId, userId);
@@ -122,7 +151,7 @@ public class TaskService : ITaskService
 
         if (task == null)
         {
-            _logger.LogError("Cannot delete Task with id: {id}, does not exist.", taskId);
+            _logger.LogError("Task with id: {id} does not exist.", taskId);
             throw new TaskNotFoundException(taskId);
         }
 
